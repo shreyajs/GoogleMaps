@@ -137,7 +137,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Log.d("MyMaps", "Exception in getLocation");
             e.printStackTrace();
         }
-
+        //case default --> request updates from NETWORK_PROVIDER
+        default:
+        requestUpdatesNetworkProvider();
     }
 
 
