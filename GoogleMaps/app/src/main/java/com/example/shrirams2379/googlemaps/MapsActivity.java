@@ -38,6 +38,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 5;
     private Location myLocation;
     private static final int MY_LOC_ZOOM_FACTOR = 17;
+    public boolean trackOn = false;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,6 +90,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    public void trackerEnabled(View view) {
+        if (trackOn = false) {
+            Log.d("MyMaps", "trackerEnabled:getLocation");
+            getLocation();
+        } else {
+
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
+            locationManager.removeUpdates(locationListenerNetwork);
+
+        }
+    }
+
     public void getLocation() {
         try {
             locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
@@ -126,8 +150,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }
                     locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
                             MIN_TIME_BW_UPDATES,
-                            MIN_DISTANCE_CHANGE_FOR_UPDATES,
-                            locationListenerGPS);
+                            MIN_DISTANCE_CHANGE_FOR_UPDATES, locationListenerGPS);
 
                     Log.d("MyMaps", "getLocation: GPS update request successful.");
                     Toast.makeText(this, "using GPS", Toast.LENGTH_SHORT);
@@ -137,13 +160,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Log.d("MyMaps", "Exception in getLocation");
             e.printStackTrace();
         }
-        //case default --> request updates from NETWORK_PROVIDER
-        default:
-        requestUpdatesNetworkProvider();
+
     }
 
-
-
+    android.location.LocationListener locationListenerNetwork = new android.location.LocationListener() {
+    @Override
     public void onLocationChanged(Location location) {
         //output Log.d and Toast message that GPS is enabled and working
         Log.d("MyMaps" , "onLocationChanged: GPS enabled and working");
@@ -181,12 +202,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
         }
 
-    public void dropMarker(String provider) {
+        @Override
+        public void onProviderEnabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+
+        }
+
+        public void dropMarker(String provider) {
 
         LatLng userLocation = null;
 
-        if (locationManager != null)
-            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (locationManager != null){
+            if (ActivityCompat.checkSelfPermission(MapsActivity.this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
                 //    ActivityCompat#requestPermissions
                 // here to request the missing permissions, and then overriding
@@ -198,13 +229,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         myLocation = locationManager.getLastKnownLocation(provider);
     }
-
-    if(myLocation == null){
+        if(myLocation == null){
         Log.d("MyMaps" , "dropMarker: myLocation is null");
         Toast.makeText(MapsActivity.this, "myLocation is null", Toast.LENGTH_SHORT);
     }
 
     else{
+            if (provider.equals(locationManager.GPS_PROVIDER)) {
+
         userLocation = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
 
         CameraUpdate update = CameraUpdateFactory.newLatLngZoom(userLocation, MY_LOC_ZOOM_FACTOR);
@@ -215,7 +247,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .radius(1)
                 .strokeColor(Color.GREEN)
                 .strokeWidth(2)
-                .fillColor(Color.GREEN)
+                .fillColor(Color.GREEN));
         mMap.animateCamera(update);
         }
 
@@ -223,9 +255,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Circle circle = mMap.addCircle(new CircleOptions()
             .center (userLocation)
             .radius(1)
-            .strokeColor(Color.ORANGE)
+            .strokeColor(Color.RED)
             .strokeWidth(2)
-            .fillColor(Color.ORANGE)
+            .fillColor(Color.RED));
         mMap.animateCamera(update);
             }
         }
