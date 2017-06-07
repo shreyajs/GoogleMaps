@@ -14,6 +14,7 @@ import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
 
 //import com.google.android.gms.location.LocationListener;
@@ -39,6 +40,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private Location myLocation;
     private static final int MY_LOC_ZOOM_FACTOR = 17;
     public boolean trackOn = false;
+    private EditText editSearch;
 
 
 
@@ -50,6 +52,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        editSearch = (EditText) findViewById(R.id.editText_search);
     }
 
 
@@ -164,42 +168,42 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     android.location.LocationListener locationListenerNetwork = new android.location.LocationListener() {
-    @Override
-    public void onLocationChanged(Location location) {
-        //output Log.d and Toast message that GPS is enabled and working
-        Log.d("MyMaps" , "onLocationChanged: GPS enabled and working");
-        Toast.makeText(MapsActivity.this , "GPS enabled and working" , Toast.LENGTH_SHORT);
+        @Override
+        public void onLocationChanged(Location location) {
+            //output Log.d and Toast message that GPS is enabled and working
+            Log.d("MyMaps" , "onLocationChanged: GPS enabled and working");
+            Toast.makeText(MapsActivity.this , "GPS enabled and working" , Toast.LENGTH_SHORT);
 
-        //drop a marker on map
-        dropMarker (LocationManager.GPS_PROVIDER);
-        Log.d("MyMaps" , "onLocationChanged: Dropping markers-network");
+            //drop a marker on map
+            dropMarker (LocationManager.GPS_PROVIDER);
+            Log.d("MyMaps" , "onLocationChanged: Dropping markers-network");
 
-        //remove network location updates
-       try{
-        locationManager.removeUpdates(locationListenerNetwork);
-    } catch (SecurityException e) {
-       }
-       }
+            //remove network location updates
+            try{
+                locationManager.removeUpdates(locationListenerNetwork);
+            } catch (SecurityException e) {
+            }
+        }
 
 
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-        //output is Log.d and Toast that network is switched to GPS
-        Log.d("MyMaps" , "onStatusChanged: Network switched to GPS");
-        Toast.makeText(MapsActivity.this, "Network switched to GPS" , Toast.LENGTH_SHORT);
-        //setup a switch statement to check the status imput parameter
-        switch(status){
-            case LocationProvider.AVAILABLE:
-                Log.d("Status", "Location Provider is Available");
-                break;
-            case LocationProvider.OUT_OF_SERVICE:
-                Log.d("Status", "Location Provider is Out of Service");
-                try {
-                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES, locationListenerNetwork);
-                }catch(SecurityException e){
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+            //output is Log.d and Toast that network is switched to GPS
+            Log.d("MyMaps" , "onStatusChanged: Network switched to GPS");
+            Toast.makeText(MapsActivity.this, "Network switched to GPS" , Toast.LENGTH_SHORT);
+            //setup a switch statement to check the status imput parameter
+            switch(status){
+                case LocationProvider.AVAILABLE:
+                    Log.d("Status", "Location Provider is Available");
+                    break;
+                case LocationProvider.OUT_OF_SERVICE:
+                    Log.d("Status", "Location Provider is Out of Service");
+                    try {
+                        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES, locationListenerNetwork);
+                    }catch(SecurityException e){
 
-                }
-                break;
-                }
+                    }
+                    break;
+            }
         }
 
         @Override
@@ -214,54 +218,70 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         public void dropMarker(String provider) {
 
-        LatLng userLocation = null;
+            LatLng userLocation = null;
 
-        if (locationManager != null){
-            if (ActivityCompat.checkSelfPermission(MapsActivity.this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
-                return;
+            if (locationManager != null){
+                if (ActivityCompat.checkSelfPermission(MapsActivity.this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    // TODO: Consider calling
+                    //    ActivityCompat#requestPermissions
+                    // here to request the missing permissions, and then overriding
+                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                    //                                          int[] grantResults)
+                    // to handle the case where the user grants the permission. See the documentation
+                    // for ActivityCompat#requestPermissions for more details.
+                    return;
+                }
+                myLocation = locationManager.getLastKnownLocation(provider);
             }
-        myLocation = locationManager.getLastKnownLocation(provider);
-    }
-        if(myLocation == null){
-        Log.d("MyMaps" , "dropMarker: myLocation is null");
-        Toast.makeText(MapsActivity.this, "myLocation is null", Toast.LENGTH_SHORT);
-    }
-
-    else{
-            if (provider.equals(locationManager.GPS_PROVIDER)) {
-
-        userLocation = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
-
-        CameraUpdate update = CameraUpdateFactory.newLatLngZoom(userLocation, MY_LOC_ZOOM_FACTOR);
-
-        if (provider.equals(locationManager.NETWORK_PROVIDER)) {
-        Circle circle = mMap.addCircle(new CircleOptions()
-                .center (userLocation)
-                .radius(1)
-                .strokeColor(Color.GREEN)
-                .strokeWidth(2)
-                .fillColor(Color.GREEN));
-        mMap.animateCamera(update);
-        }
-
-        else if (provider.equals(locationManager.GPS_PROVIDER)) {
-        Circle circle = mMap.addCircle(new CircleOptions()
-            .center (userLocation)
-            .radius(1)
-            .strokeColor(Color.RED)
-            .strokeWidth(2)
-            .fillColor(Color.RED));
-        mMap.animateCamera(update);
+            if(myLocation == null){
+                Log.d("MyMaps" , "dropMarker: myLocation is null");
+                Toast.makeText(MapsActivity.this, "myLocation is null", Toast.LENGTH_SHORT);
             }
-        }
-    }
 
+            else{
+                if (provider.equals(locationManager.GPS_PROVIDER)) {
 
+                    userLocation = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
 
+                    CameraUpdate update = CameraUpdateFactory.newLatLngZoom(userLocation, MY_LOC_ZOOM_FACTOR);
+
+                    if (provider.equals(locationManager.NETWORK_PROVIDER)) {
+                        Circle circle = mMap.addCircle(new CircleOptions()
+                                .center (userLocation)
+                                .radius(1)
+                                .strokeColor(Color.GREEN)
+                                .strokeWidth(2)
+                                .fillColor(Color.GREEN));
+                        mMap.animateCamera(update);
+                    }
+
+                    else if (provider.equals(locationManager.GPS_PROVIDER)) {
+                        Circle circle = mMap.addCircle(new CircleOptions()
+                                .center (userLocation)
+                                .radius(1)
+                                .strokeColor(Color.RED)
+                                .strokeWidth(2)
+                                .fillColor(Color.RED));
+                        mMap.animateCamera(update);
+                    }
+                public void clearMarkers(View view){
+                    mMap.clear();
+                }
+
+                public void searchMap(View view, String interest){
+                    int PLACE_PICKER_REQUEST = 1;
+                    interest = editSearch.getText().toString();
+                    PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
+                    try {
+                        startActivityForResult(builder.build(this), PLACE_PICKER_REQUEST);
+                    } catch (GooglePlayServicesRepairableException e) {
+                        e.printStackTrace();
+                    } catch (GooglePlayServicesNotAvailableException e) {
+                        e.printStackTrace();
+                    }
+                    if(editSearch.getText()== null){
+                        Log.d("MyMaps", "noSearch");
+                        Toast.makeText(this, "noSearch", Toast.LENGTH_SHORT).show();
+                    }
+
+                }
