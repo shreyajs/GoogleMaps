@@ -37,6 +37,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -49,12 +50,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 5;
     private Location myLocation;
     private LatLng userLocation;
-    private LatLng coordinates;
+    private LatLng PointsofInterest;
     private static final int MY_LOC_ZOOM_FACTOR = 17;
     public boolean trackOn = false;
     private EditText editSearch;
     private Geocoder geocoder;
-    private List<Address> pointsOfInterest;
+    private List<Address> myAddresses;
 
 
     @Override
@@ -100,10 +101,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public void changeView(View view) {
-        if (mMap.getMapType() != GoogleMap.MAP_TYPE_SATELLITE) {
-            mMap.setMapType(mMap.MAP_TYPE_SATELLITE);
-        } else {
+        if (mMap.getMapType() != GoogleMap.MAP_TYPE_NORMAL) {
             mMap.setMapType(mMap.MAP_TYPE_NORMAL);
+        } else {
+            mMap.setMapType(mMap.MAP_TYPE_SATELLITE);
         }
     }
 
@@ -189,6 +190,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
 
+
     }
 
 
@@ -216,14 +218,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         public void onStatusChanged(String provider, int status, Bundle extras) {
             //output is Log.d and Toast that GPS is enabled and working
             Log.d("MyMaps", "onStatusChanged: GPS enabled and working");
+            Toast.makeText(MapsActivity.this, "GPS enabled and working", Toast.LENGTH_SHORT);
             //setup a switch statement to check the status input parameter
             switch (status) {
                 //case LocationProvider.AVAILABLE --> output message to Log.d and Toast
                 case LocationProvider.AVAILABLE:
                     Log.d("MyMaps", "onStatusChanged: Location Provider available");
-                    //case LocationProvider.OUT_OF_SERVICE --> output message and request updates from NETWORK_PROVIDER
+                    Toast.makeText(MapsActivity.this, "Location Provider available", Toast.LENGTH_SHORT).show();
+                    break;
+                //case LocationProvider.OUT_OF_SERVICE --> output message and request updates from NETWORK_PROVIDER
                 case LocationProvider.OUT_OF_SERVICE:
                     Log.d("MyMaps", "onStatusChanged: Location Provider out of service");
+                    Toast.makeText(MapsActivity.this, "Location Provider out of service", Toast.LENGTH_SHORT).show();
                     if (ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                         // TODO: Consider calling
                         //    ActivityCompat#requestPermissions
@@ -242,6 +248,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 //case LocationProvider.TEMPORARILY_UNAVAILABLE --> request updates from NETWORK_PROVIDER
                 case LocationProvider.TEMPORARILY_UNAVAILABLE:
                     Log.d("MyMaps", "onStatusChanged: Location Provider temporarily unavailable");
+                    Toast.makeText(MapsActivity.this, "Location Provider temporarily unavailable", Toast.LENGTH_SHORT).show();
                     locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
                             MIN_TIME_BW_UPDATES,
                             MIN_DISTANCE_CHANGE_FOR_UPDATES,
@@ -272,6 +279,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         public void onLocationChanged(Location location) {
             //output is Log.d and Toast that GPS is enabled and working
             Log.d("MyMaps", "onLocationChanged: GPS enabled and working");
+            Toast.makeText(MapsActivity.this, "GPS enabled and working", Toast.LENGTH_SHORT).show();
 
             //Drop a marker on map- create a method called dropMarker
             dropMarker(LocationManager.NETWORK_PROVIDER);
@@ -298,6 +306,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         public void onStatusChanged(String provider, int status, Bundle extras) {
             //output is Log.d and Toast that GPS is enabled and working
             Log.d("MyMaps", "onLocationChanged: GPS enabled and working");
+            Toast.makeText(MapsActivity.this, "GPS enabled and working", Toast.LENGTH_SHORT).show();
+
         }
 
         @Override
@@ -331,24 +341,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             myLocation = locationManager.getLastKnownLocation(provider);
 
         }
-        if (myLocation == null) {
+        if(myLocation == null){
             //display a message via Log.d and Toast
             Log.d("MyMaps", "dropMarker: myLocation is null");
             Toast.makeText(MapsActivity.this, "myLocation is null", Toast.LENGTH_SHORT).show();
-        } else {
+        }else{
             userLocation = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
             //Display a message with the lat/lng
             CameraUpdate update = CameraUpdateFactory.newLatLngZoom(userLocation, MY_LOC_ZOOM_FACTOR);
             //Drop the actual marker on the map
             //if using circles, references Android Circle class
-            if (provider.equals(locationManager.NETWORK_PROVIDER)) {
+            if(provider.equals(locationManager.GPS_PROVIDER)) {
                 mMap.addCircle(new CircleOptions()
                         .center(userLocation)
                         .radius(1)
                         .strokeColor(Color.GREEN)
                         .strokeWidth(2)
                         .fillColor(Color.GREEN));
-            } else {
+            }
+            else{
                 mMap.addCircle(new CircleOptions()
                         .center(userLocation)
                         .radius(1)
@@ -361,19 +372,40 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    public void clearMarkers(View view) {
+    public void clearMarkers(View view){
 
         mMap.clear();
     }
 
     public void searchMap(View view, String interest) throws IOException {
-        interest = editSearch.getText().toString();
+        mMap.clear();
+        if (editSearch.getText().toString()== null) {
+            return;
+        }
+        geocoder = new Geocoder(this, Locale.getDefault());
+        if (geocoder.isPresent()) {
+            Log.d("DEBUG", editSearch.getText().toString());
+            try {
+                Log.d("DEBUG", "Attempt");
+                myAddresses  = geocoder.getFromLocationName(editSearch.getText().toString(), 300, myLocation.getLatitude() - 0.083333, myLocation.getLongitude() - 0.083333, myLocation.getLatitude() + 0.083333, myLocation.getLongitude() + 0.083333);
+                Log.d("DEBUG", "Geocoder");
+            } catch (SecurityException e) {
+                Log.d("DEBUG", "IOException");
 
-        //not complete yet
+            }
+            for (int i = 0; i < myAddresses.size(); i++) {
+                Log.d("DEBUG", "Enters for loop");
+                PointsofInterest = new LatLng(myAddresses.get(i).getLatitude(), myAddresses.get(i).getLongitude());
+                mMap.addMarker(new MarkerOptions().position(PointsofInterest).title(editSearch.getText().toString()));
 
+            }
 
+        } else {
+
+        }
+    }
+
+    public void clear(View v){
+        mMap.clear();
     }
 }
-
-
-
